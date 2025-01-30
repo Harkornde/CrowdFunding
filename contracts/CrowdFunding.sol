@@ -11,6 +11,9 @@ contract CrowdFunding {
         uint32 _endAt
     );
 
+    event cancel(uint _id);
+    event pledge(uint256 _id, address _address, uint256 _amount);
+
     struct Campaign {
         address campaignOwner;
         uint32 startAt;
@@ -23,12 +26,13 @@ contract CrowdFunding {
     IERC20 public immutable token;
     uint256 public count;
     mapping(uint256 => Campaign) public Campaigns;
+    mapping(uint256 => mapping(address => uint)) pledgedAmount;
 
     constructor(address _token) {
         token = IERC20(_token);
     }
 
-    function Launch(uint32 _startAt, uint32 _endAt, uint256 _goal) public {
+    function Launch(uint32 _startAt, uint32 _endAt, uint256 _goal) external {
         require(_startAt >= block.timestamp, "Start at < now");
         require(_endAt >= _startAt, "end at < start at");
         require(_endAt <= block.timestamp + 7 days);
@@ -45,5 +49,24 @@ contract CrowdFunding {
         });
 
         emit launch(count, msg.sender, _startAt, _endAt);
+    }
+
+    function Cancel(uint _Id) external {
+        Campaign memory campaign = Campaigns[_Id];
+        require(msg.sender == campaign.campaignOwner, "Only owner can call");
+        require(block.timestamp > campaign.startAt, "Not started");
+
+        delete Campaigns[_Id];
+        emit cancel(_Id);
+    }
+
+    function Pledge(uint _id, uint _amount) external {
+        Campaign storage campaign = Campaigns[_id];
+        require(block.timestamp >= campaign.startAt, "Not started");
+        require(block.timestamp <= campaign.endAt, "Ended");
+        campaign.pledge += _amount;
+        pledgedAmount[_id][msg.sender] += _amount;
+        token.transferFrom(msg.sender, address(this), _amount);
+        emit pledge(_id, msg.sender, _amount);
     }
 }
