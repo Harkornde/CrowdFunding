@@ -14,6 +14,7 @@ contract CrowdFunding {
     event cancel(uint _id);
     event pledge(uint256 _id, address _address, uint256 _amount);
     event unPledge(uint256 _id, address indexed _address, uint _amount);
+    event claim(uint256 _id);
 
     struct Campaign {
         address campaignOwner;
@@ -81,5 +82,15 @@ contract CrowdFunding {
         emit unPledge(_id, msg.sender, _amount);
     }
 
-    // function Claimed() external {};
+    function Claimed(uint256 _id) external {
+        Campaign storage campaign = Campaigns[_id];
+        require(campaign.campaignOwner == msg.sender);
+        require(block.timestamp >= campaign.endAt, "ongoing campaign");
+        require(campaign.pledge >= campaign.goal, "goal not reached");
+        require(!campaign.claimed, "claimed");
+
+        campaign.claimed = true;
+        token.transfer(msg.sender, campaign.pledge);
+        emit claim(_id);
+    }
 }
