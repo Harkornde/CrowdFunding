@@ -57,7 +57,7 @@ contract CrowdFunding {
     function Cancel(uint _Id) external {
         Campaign memory campaign = Campaigns[_Id];
         require(msg.sender == campaign.campaignOwner, "Only owner can call");
-        require(block.timestamp > campaign.startAt, "Not started");
+        require(block.timestamp < campaign.startAt, "Not started");
 
         delete Campaigns[_Id];
         emit cancel(_Id);
